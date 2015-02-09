@@ -1,7 +1,6 @@
 from __future__ import print_function
 import cplex
 import math
-import copy
 
 def printSolution(prob):
 	numrows = prob.linear_constraints.get_num()
@@ -33,16 +32,20 @@ class SubProblem():
 		self.additional_constraints[variable_index] = (isLower, value)
 
 	def solve(self):
+		num_variables = self.cplex_problem.variables.get_num()
+		for i in range(num_variables):
+			self.cplex_problem.variables.set_lower_bounds(i, 0.0)
+			self.cplex_problem.variables.set_upper_bounds(i, cplex.infinity)
+
+			if i in self.additional_constraints:
+				(isLower, value) = 	self.additional_constraints[i]
+				if isLower:
+					self.cplex_problem.variables.set_lower_bounds(i, value)
+				else:
+					self.cplex_problem.variables.set_upper_bounds(i, value)
 		print('solving with additional constraints', self.additional_constraints)
 		print('lower', self.cplex_problem.variables.get_lower_bounds())
 		print('upper', self.cplex_problem.variables.get_upper_bounds())
-
-		for variable_index, (isLower, value) in self.additional_constraints.items():
-			self.cplex_problem.variables.delete(variable_index)
-			if isLower:
-				self.cplex_problem.variables.set_lower_bounds(variable_index, value)
-			else:
-				self.cplex_problem.variables.set_upper_bounds(variable_index, value)
 
 		try:
 			self.cplex_problem.solve()
@@ -63,6 +66,7 @@ class SubProblem():
 			if x[i] % 1 > 0:
 				floor = math.floor(x[i])
 				ceil = math.ceil(x[i])
+				print(x, floor, ceil)
 				return (i, x[i], floor, ceil)
 		return  None
 
@@ -81,7 +85,7 @@ def main():
 
 
 	while(len(queue) != 0):
-		current_problem = queue.pop()
+		current_problem = queue.pop(0)
 
 		# checks for feasibility
 		if not current_problem.solve():
@@ -89,11 +93,14 @@ def main():
 
 		objective_value = current_problem.get_objective_value()
 
+
 		if z_max == None:
 			z_max = objective_value
 
 		first_non_integral = current_problem.find_first_non_integral()
 
+		print(objective_value)
+		print(first_non_integral)
 
 		# Fathom spaces where objective_value is less than z_min
 		if z_min and objective_value < z_min:
@@ -126,28 +133,6 @@ def main():
 if __name__ == "__main__":
     main()
 
-
-
-
-# prob.variables.set_lower_bounds(1, 5.0)
-# prob.variables.set_upper_bounds(0, 1.0)
-# #prob.variables.set_lower_bounds(1, 4.0)
-
-# #prob.variables.set_lower_bounds(0, 13.0)
-
-
-# prob.solve()
-
-# printSolution(prob)
-
-# status = prob.solution.get_status()
-# print(prob.solution.status[status])
-# if status == prob.solution.status.unbounded:
-#     print("Model is unbounded")
-# if status == prob.solution.status.infeasible:
-#     print("Model is infeasible")
-# if status == prob.solution.status.infeasible_or_unbounded:
-#     print("Model is infeasible or unbounded")
 
 
 
