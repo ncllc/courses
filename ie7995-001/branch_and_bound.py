@@ -1,7 +1,8 @@
 from __future__ import print_function
 import cplex
 import math
-
+import argparse
+import os
  
 
 class SubProblem():
@@ -61,8 +62,22 @@ class SubProblem():
 
 
 def main():
-    
-	sub_problem = SubProblem(cplex.Cplex("practice3.lp"))
+	parser = argparse.ArgumentParser(description="Run relaxed lp")
+	parser.add_argument('-i', '--input', help='location of input lp file')
+	args = parser.parse_args()
+
+	if not args.input:
+		parser.print_help()
+		return
+
+
+	if not os.path.exists(args.input):
+		print('Invalid path %s' % args.input)
+		return
+
+	cplex_file = args.input
+
+	sub_problem = SubProblem(cplex.Cplex(cplex_file))
 	queue = []
 	queue.append(sub_problem)
 
@@ -100,8 +115,8 @@ def main():
 				z_min = objective_value
 				candidate_solution = (objective_value, current_problem.get_values())
 		else:
-			sub_problem_floor = SubProblem(cplex.Cplex("practice3.lp"))
-			sub_problem_ceil = SubProblem(cplex.Cplex("practice3.lp"))
+			sub_problem_floor = SubProblem(cplex.Cplex(cplex_file))
+			sub_problem_ceil = SubProblem(cplex.Cplex(cplex_file))
 
 			for variable_index, (isLower, value) in current_problem.additional_constraints.items():
 				sub_problem_floor.additional_constraints[variable_index] = (isLower, value)
