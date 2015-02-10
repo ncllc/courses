@@ -2,8 +2,11 @@
 \Problem name: 
 
 Maximize
- obj: 1 x1 + 0.64 x2
+ obj: 1000 x1 + 700 x2
 Subject To
- c1: 50 x1 + 31 x2 <= 250
- c2: 3 x1 - 2 x2 >= -4
+ c1: 100 x1 + 50 x2 <= 2425
+ c2: 20 x2 <= 510
 End
+
+
+

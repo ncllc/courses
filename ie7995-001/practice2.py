@@ -26,11 +26,13 @@ def printSolution(prob):
 prob = cplex.Cplex("practice2.lp")
 
 prob.variables.set_upper_bounds(0, 1.0)
+prob.variables.set_upper_bounds(1, cplex.infinity)
+prob.variables.set_lower_bounds(0, 0.0)
 prob.variables.set_lower_bounds(1, 4.0)
 
-#prob.variables.set_lower_bounds(0, 2.0)
-prob.solve()
 
+prob.solve()
+print('here')
 printSolution(prob)
 
 status = prob.solution.get_status()
