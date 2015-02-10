@@ -1,5 +1,8 @@
 from __future__ import print_function
 import cplex
+import argparse
+import os
+
 
 
 def printSolution(prob):
@@ -21,28 +24,38 @@ def printSolution(prob):
 	    print("Column %d:  Value = %10f Reduced cost = %10f" % (j, x[j], dj[j]))
 
 
+def main():
+    parser = argparse.ArgumentParser(description="Run relaxed lp")
+    parser.add_argument('-i', '--input', help='location of input lp file')
+
+    args = parser.parse_args()
+
+    if not args.input:
+        parser.print_help()
+        return
+
+    if not os.path.exists(args.input):
+        print 'Invalid path %s' % args.input
+        return
+        
+	prob = cplex.Cplex(args.input)
 
 
-prob = cplex.Cplex("practice2.lp")
+	prob.solve()
+	print('here')
+	printSolution(prob)
 
-prob.variables.set_upper_bounds(0, 1.0)
-prob.variables.set_upper_bounds(1, cplex.infinity)
-prob.variables.set_lower_bounds(0, 0.0)
-prob.variables.set_lower_bounds(1, 4.0)
+	status = prob.solution.get_status()
+	print(prob.solution.status[status])
+	if status == prob.solution.status.unbounded:
+	    print("Model is unbounded")
+	if status == prob.solution.status.infeasible:
+	    print("Model is infeasible")
+	if status == prob.solution.status.infeasible_or_unbounded:
+	    print("Model is infeasible or unbounded")
 
 
-prob.solve()
-print('here')
-printSolution(prob)
-
-status = prob.solution.get_status()
-print(prob.solution.status[status])
-if status == prob.solution.status.unbounded:
-    print("Model is unbounded")
-if status == prob.solution.status.infeasible:
-    print("Model is infeasible")
-if status == prob.solution.status.infeasible_or_unbounded:
-    print("Model is infeasible or unbounded")
-
+if __name__ == "__main__":
+    main()
 
 
