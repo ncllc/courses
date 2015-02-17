@@ -25,9 +25,10 @@ class SubProblem():
 		print('lower', self.cplex_problem.variables.get_lower_bounds())
 		print('upper', self.cplex_problem.variables.get_upper_bounds())
 
-
+		# calling solve on the cplex object
 		self.cplex_problem.solve()
 
+		# retrieve staus from cplex object
 		status = self.cplex_problem.solution.get_status()
 		print(self.cplex_problem.solution.status[status])
 		if status == self.cplex_problem.solution.status.unbounded:
@@ -47,10 +48,16 @@ class SubProblem():
 	def get_values(self):
 		return self.cplex_problem.solution.get_values()		
 
+	# returns first non integral solution, alongwith 
+	# it's index (0-indexed), and its corresponding integral floor
+	# and ceiling values. In the case there are non-integrals
+	# it returs null, implying that all variables are integrals.
 	def find_first_non_integral(self):
 		num_variables = self.cplex_problem.variables.get_num()
 		x = self.cplex_problem.solution.get_values()
 		for i in range(num_variables):
+			# Mod operator is used to check if 
+			# the current solution is non-integral
 			if x[i] % 1 > 0:
 				floor = math.floor(x[i])
 				ceil = math.ceil(x[i])
@@ -103,27 +110,36 @@ def main():
 	# Iteration logic is based on exploration of
 	# state space via breadth first search
 	while(len(queue) != 0):
-		# 
+		# dequeue problem from queue
 		current_problem = queue.pop(0)
 
-		# checks for feasibility
+		# checks for feasibility and if not 
+		# feasible fathoms and goes to top 
+		# of the while-loop
 		if not current_problem.solve():
 			continue
 
+		# find z at the subproblem
 		objective_value = current_problem.get_objective_value()
 
 
+		# for inital case of no value being present on
+		# z_max, assign objective_value to z_max
 		if z_max == None:
 			z_max = objective_value
 
+		# Fathom spaces where objective_value is less 
+		# than z_min and goto top of while-loop
+		if z_min and objective_value < z_min:
+			continue
+
+		# Branching decision on non integral solutions
+		# are done by selecting the first non integral
+		# solution.
 		first_non_integral = current_problem.find_first_non_integral()
 
 		print(objective_value)
 		print(first_non_integral)
-
-		# Fathom spaces where objective_value is less than z_min
-		if z_min and objective_value < z_min:
-			continue
 
 		if not first_non_integral:
 			print('found integral solution', (objective_value, current_problem.get_values()))
@@ -142,7 +158,7 @@ def main():
 			sub_problem_floor.additional_constraints[variable_index] = (False, floor)
 			sub_problem_ceil.additional_constraints[variable_index] = (True, ceil)
 
-
+			# Enqueue sub-problems into the queue
 			queue.append(sub_problem_floor)
 			queue.append(sub_problem_ceil)
 
