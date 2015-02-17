@@ -62,7 +62,7 @@ class SubProblem():
 
 
 def main():
-	parser = argparse.ArgumentParser(description="Run relaxed lp")
+	parser = argparse.ArgumentParser(description="Run branch and bound")
 	parser.add_argument('-i', '--input', help='location of input lp file')
 	args = parser.parse_args()
 
@@ -75,19 +75,35 @@ def main():
 		print('Invalid path %s' % args.input)
 		return
 
+	# Read in the cplex file location
 	cplex_file = args.input
 
+	# Instantiate SubProblem, while passing into
+	# ctor the cplex object from the file location
+	# stored in cplex_file
 	sub_problem = SubProblem(cplex.Cplex(cplex_file))
+
+	# Creating an empty queue, this is modeled as 
+	# a list. Queue has FIFO behavior
 	queue = []
+
+	# Enqueue initial problem
 	queue.append(sub_problem)
 
+
+	# global variables for lower and upper bounds of
+	# Z
 	z_min = None
 	z_max = None
+
+	# intermediate optimal solution
 	candidate_solution = None
 
 
+	# Iteration logic is based on exploration of
+	# state space via breadth first search
 	while(len(queue) != 0):
-		#raw_input("Please press 'enter' to iterate")
+		# 
 		current_problem = queue.pop(0)
 
 		# checks for feasibility
