@@ -55,13 +55,13 @@ class SubProblem():
 	def find_first_non_integral(self):
 		num_variables = self.cplex_problem.variables.get_num()
 		x = self.cplex_problem.solution.get_values()
+		print("[x of i's]", x)
 		for i in range(num_variables):
 			# Mod operator is used to check if 
 			# the current solution is non-integral
 			if x[i] % 1 > 0:
 				floor = math.floor(x[i])
 				ceil = math.ceil(x[i])
-				print(x, floor, ceil)
 				return (i, x[i], floor, ceil)
 		return  None
 
@@ -109,7 +109,11 @@ def main():
 
 	# Iteration logic is based on exploration of
 	# state space via breadth first search
+	i = 0
 	while(len(queue) != 0):
+		i = i + 1
+		print("-------------")
+		print("Pass:", i)
 		# dequeue problem from queue
 		current_problem = queue.pop(0)
 
@@ -138,8 +142,10 @@ def main():
 		# solution.
 		first_non_integral = current_problem.find_first_non_integral()
 
-		print(objective_value)
-		print(first_non_integral)
+		print("[objective_value]", objective_value)
+		# printing index of first_non_integral, the current solution value,
+		# the upper bound and the lower bound respectively
+		print("[index, non_integral_value, upper_bound, lower_bound]", first_non_integral)
 
 		if not first_non_integral:
 			print('found integral solution', (objective_value, current_problem.get_values()))
