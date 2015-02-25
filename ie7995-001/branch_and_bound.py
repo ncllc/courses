@@ -4,7 +4,7 @@ import math
 import argparse
 import os
  
-
+# Encapsulates notion of a SubProblem
 class SubProblem():
 	# cplex_problem is the cplex representation of the problem generated from *.lp file
 	def __init__(self, cplex_problem):  
@@ -14,7 +14,7 @@ class SubProblem():
 		self.additional_constraints = {}
 
 	def solve(self):
-		# find all the 
+		# find all the additional constraints and set them
 		for i in self.additional_constraints.keys():
 			(isLower, value) = 	self.additional_constraints[i]
 			if isLower:
@@ -63,7 +63,7 @@ class SubProblem():
 				floor = math.floor(x[i])
 				ceil = math.ceil(x[i])
 				return (i, x[i], floor, ceil)
-		return  None
+		return None
 
 
 
@@ -88,19 +88,17 @@ def main():
 	# Instantiate SubProblem, while passing into
 	# ctor the cplex object from the file location
 	# stored in cplex_file
-	sub_problem = SubProblem(cplex.Cplex(cplex_file))
+	problem_p0 = SubProblem(cplex.Cplex(cplex_file))
 
 	# Creating an empty queue, this is modeled as 
 	# a list. Queue has FIFO behavior
 	queue = []
 
 	# Enqueue initial problem
-	queue.append(sub_problem)
+	queue.append(problem_p0)
 
 
-	# global variables for lower and upper bounds of
-	# Z
-	z_min = None
+	# global variables for upper bound of Z
 	z_max = None
 
 	# intermediate optimal solution
@@ -115,32 +113,27 @@ def main():
 		print("-------------")
 		print("Pass:", i)
 		# dequeue problem from queue
-		current_problem = queue.pop(0)
+		problem_p_i = queue.pop(0)
 
 		# checks for feasibility and if not 
 		# feasible fathoms and goes to top 
 		# of the while-loop
-		if not current_problem.solve():
+		if not problem_p_i.solve():
 			continue
 
-		# find z at the subproblem
-		objective_value = current_problem.get_objective_value()
+		# find z-bar at the subproblem
+		objective_value = problem_p_i.get_objective_value()
 
-
-		# for inital case of no value being present on
-		# z_max, assign objective_value to z_max
-		if z_max == None:
-			z_max = objective_value
 
 		# Fathom spaces where objective_value is less 
-		# than z_min and goto top of while-loop
-		if z_min and objective_value < z_min:
+		# than z_max and goto top of while-loop
+		if z_max and objective_value < z_max:
 			continue
 
 		# Branching decision on non integral solutions
 		# are done by selecting the first non integral
 		# solution.
-		first_non_integral = current_problem.find_first_non_integral()
+		first_non_integral = problem_p_i.find_first_non_integral()
 
 		print("[objective_value]", objective_value)
 		# printing index of first_non_integral, the current solution value,
@@ -148,25 +141,25 @@ def main():
 		print("[index, non_integral_value, upper_bound, lower_bound]", first_non_integral)
 
 		if not first_non_integral:
-			print('found integral solution', (objective_value, current_problem.get_values()))
-			if z_min == None or z_min < objective_value:
-				z_min = objective_value
-				candidate_solution = (objective_value, current_problem.get_values())
+			print('found integral solution', (objective_value, problem_p_i.get_values()))
+			if z_max == None or z_max < objective_value:
+				z_max = objective_value
+				candidate_solution = (objective_value, problem_p_i.get_values())
 		else:
-			sub_problem_floor = SubProblem(cplex.Cplex(cplex_file))
-			sub_problem_ceil = SubProblem(cplex.Cplex(cplex_file))
+			problem_p_i_floor = SubProblem(cplex.Cplex(cplex_file))
+			problem_p_i_ceil = SubProblem(cplex.Cplex(cplex_file))
 
-			for variable_index, (isLower, value) in current_problem.additional_constraints.items():
-				sub_problem_floor.additional_constraints[variable_index] = (isLower, value)
-				sub_problem_ceil.additional_constraints[variable_index] = (isLower, value)
+			for variable_index, (isLower, value) in problem_p_i.additional_constraints.items():
+				problem_p_i_floor.additional_constraints[variable_index] = (isLower, value)
+				problem_p_i_ceil.additional_constraints[variable_index] = (isLower, value)
 			
 			variable_index, variable_value, floor, ceil = first_non_integral
-			sub_problem_floor.additional_constraints[variable_index] = (False, floor)
-			sub_problem_ceil.additional_constraints[variable_index] = (True, ceil)
+			problem_p_i_floor.additional_constraints[variable_index] = (False, floor)
+			problem_p_i_ceil.additional_constraints[variable_index] = (True, ceil)
 
 			# Enqueue sub-problems into the queue
-			queue.append(sub_problem_floor)
-			queue.append(sub_problem_ceil)
+			queue.append(problem_p_i_floor)
+			queue.append(problem_p_i_ceil)
 
 
 	print('Solution', candidate_solution)
